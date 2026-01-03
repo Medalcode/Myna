@@ -1,0 +1,25 @@
+2026-01-03 18:23:17 | Thread-Argos | INFO | [ARGOS] Sistema de trading iniciado.
+2026-01-03 18:23:17 | Thread-Argos | INFO | [ARGOS] Analizando BTC/USDT a $95100. RSI: 45.20
+2026-01-03 18:23:17 | Thread-Hermes | INFO | [HERMES] Sistema de automatización iniciado.
+2026-01-03 18:23:17 | Thread-Hermes | INFO | [HERMES] Rotando IP a 164.177.92.242
+2026-01-03 18:23:20 | Thread-Hermes | INFO | [HERMES] Iniciando resolución de Captcha...
+2026-01-03 18:23:22 | Thread-Argos | INFO | [ARGOS] Analizando BTC/USDT a $95100. RSI: 64.83
+2026-01-03 18:23:24 | Thread-Hermes | INFO | [HERMES] Claim exitoso. Ganancia: 13 sats. Total: 13
+2026-01-03 18:23:27 | Thread-Argos | INFO | [ARGOS] Analizando BTC/USDT a $95000. RSI: 37.89
+2026-01-03 18:23:27 | Thread-Argos | INFO | [ARGOS] Oportunidad de COMPRA detectada. Ejecutando orden simulada.
+2026-01-03 18:23:32 | Thread-Argos | INFO | [ARGOS] Analizando BTC/USDT a $95000. RSI: 63.65
+2026-01-03 18:23:35 | MainThread | WARNING | [SYSTEM] Usuario solicitó detención manual.
+2026-01-03 18:25:31 | Argos-Monitor | INFO | [ARGOS] Iniciando subproceso de Argos...
+2026-01-03 18:25:31 | Hermes-Thread | INFO | [HERMES] Bot Hermes iniciado (Modo Simulación Interna).
+2026-01-03 18:25:36 | Hermes-Thread | INFO | [HERMES] Claim +21 sats (Proxy: 172.16.0.1)
+2026-01-03 18:30:18 | Argos-Monitor | INFO | [ARGOS] Iniciando subproceso de Argos...
+2026-01-03 18:30:49 | Argos-Monitor | INFO | [ARGOS] Iniciando subproceso de Argos...
+2026-01-03 18:35:39 | Argos-Monitor | INFO | [ARGOS] Iniciando subproceso de Argos...
+2026-01-03 18:35:39 | Hermes-Thread | INFO | [HERMES] Iniciando rotación con 28 proxies.
+2026-01-03 18:35:39 | Hermes-Thread | INFO | [HERMES] Iniciando sesión con proxy http://43.167.186.134:6006
+2026-01-03 19:08:41 | Argos-Monitor | INFO | [ARGOS] Iniciando subproceso de Argos...
+2026-01-03 19:08:41 | Hermes-Thread | INFO | [HERMES] Iniciando rotación con 28 proxies.
+2026-01-03 19:08:41 | Hermes-Thread | INFO | [HERMES] Iniciando sesión con proxy http://43.167.186.134:6006
+2026-01-03 19:12:25 | Argos-Monitor | INFO | [ARGOS] Iniciando subproceso de Argos...
+2026-01-03 19:12:25 | Hermes-Thread | INFO | [HERMES] Iniciando rotación con 28 proxies.
+2026-01-03 19:12:25 | Hermes-Thread | INFO | [HERMES] Iniciando sesión con proxy http://43.167.186.134:6006
