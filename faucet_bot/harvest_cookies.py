@@ -10,7 +10,7 @@ def load_proxies(file_path):
     except FileNotFoundError:
         return []
 
-def harvest_session(proxy_string, session_id, url="https://freebitco.in/?op=home"):
+def harvest_session(proxy_string, session_id, url="https://cointiply.com/login"):
     print(f"\n[{session_id}] Iniciando navegador para Login Manual...")
     
     # Parsear proxy manualmente porque FaucetBot está en main.py y queremos script aislado
