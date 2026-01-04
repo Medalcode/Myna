@@ -8,13 +8,15 @@ from playwright_stealth import Stealth
 # Importar las recetas
 try:
     from recipes import ACTIVE_RECIPES
+    from database import oracle
 except ImportError:
-    # Soporte para ejecución relativa
     try:
         from faucet_bot.recipes import ACTIVE_RECIPES
+        from faucet_bot.database import oracle
     except:
         ACTIVE_RECIPES = []
-        print("[Error] No se pudieron importar las recetas.")
+        oracle = None
+        print("[Error] No se pudieron importar las dependencias (recetas/db).")
 
 class FaucetBot:
     def __init__(self, proxy_string, session_id="default"):
@@ -63,9 +65,14 @@ class FaucetBot:
             print(f"   [Init] Launching browser [Session: {self.session_id}]")
             
             try:
-                browser = p.chromium.launch(headless=False, proxy=self.proxy_config)
+                # Launch browser (Ghost Mode enabled)
+                # 'headless=True' hace que el navegador sea invisible
+                browser = p.chromium.launch(
+                    headless=True, 
+                    proxy=self.proxy_config,
+                    args=["--disable-blink-features=AutomationControlled"] # Extra stealth
+                )
                 
-                # Contexto persistente global para todas las recetas de esta sesión
                 context_options = {}
                 if os.path.exists(self.state_file):
                     print(f"   [Cookie] Loading session...")
@@ -74,30 +81,47 @@ class FaucetBot:
                 context = browser.new_context(**context_options)
                 page = context.new_page()
                 
-                # Stealth global
                 stealth = Stealth()
                 stealth.apply_stealth_sync(page)
                 
-                # Ejecutar cada receta
                 for recipe in recipes:
                     print(f"   \n--- Recipe: {recipe.name} ---")
-                    try:
-                        print(f"   [Nav] {recipe.start_url}")
-                        page.goto(recipe.start_url, timeout=60000)
-                        
-                        self._human_like_behavior(page)
-                        
-                        # Inyectar logger custom
-                        recipe.run(page, logger=print)
-                        
-                        # Guardar estado después de cada receta exitosa
-                        context.storage_state(path=self.state_file)
-                        
-                        # Descanso breve entre sitios
-                        time.sleep(random.randint(3, 7))
-                        
-                    except Exception as e:
-                        print(f"   [Error] Receta {recipe.name} falló: {e}")
+                    max_retries = 3
+                    for attempt in range(max_retries):
+                        try:
+                            print(f"   [Nav] {recipe.start_url} (Intento {attempt + 1}/{max_retries})")
+                            page.goto(recipe.start_url, timeout=60000)
+                            
+                            self._human_like_behavior(page)
+                            
+                            recipe.run(page, logger=print)
+                            
+                            # Guardar estado
+                            context.storage_state(path=self.state_file)
+                            
+                            # Registrar éxito en Oracle DB
+                            if oracle:
+                                amount_fake_demo = 10 if "Demo" in recipe.name else 0 
+                                oracle.log_earning(
+                                    self.session_id, 
+                                    recipe.name, 
+                                    amount_fake_demo, 
+                                    self.proxy_config['server']
+                                )
+
+                            time.sleep(random.randint(3, 7))
+                            break # Éxito, salir del bucle
+                            
+                        except Exception as e:
+                            print(f"   [Warn] Error en {recipe.name}: {e}")
+                            if attempt < max_retries - 1:
+                                wait_time = 2 ** attempt
+                                print(f"   [Retry] Reintentando en {wait_time}s...")
+                                time.sleep(wait_time)
+                            else:
+                                print(f"   [Error] Receta {recipe.name} falló definitivamente.")
+                                if oracle:
+                                    oracle.log_earning(self.session_id, recipe.name, 0, self.proxy_config['server'], status=f"ERROR_FINAL: {e}")
                 
                 print("   [Done] All recipes finished.")
                 browser.close()
@@ -113,19 +137,14 @@ def load_proxies(file_path):
         return []
 
 def main():
-    # Modo standalone para pruebas
     proxies_file = 'proxies.txt'
     proxies = load_proxies(proxies_file)
-    
-    if not proxies:
-        return
-
+    if not proxies: return
     print(f"Running standalone mode with {len(proxies)} proxies.")
-    
     for i, proxy in enumerate(proxies):
         bot = FaucetBot(proxy, session_id=f"test_account_{i}")
-        bot.run_recipes() # Ejecuta todas las recetas activas
-        break # Solo prueba 1 en modo consola
+        bot.run_recipes()
+        break 
 
 if __name__ == "__main__":
     main()

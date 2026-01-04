@@ -200,7 +200,14 @@ def mostrar_pantalla():
             print(f"    └── Acción: {status_last_action}")
             print(f"")
             print(f"--------------------------------------------------")
-            print(f"💰 {AMARILLO}BALANCE ACUMULADO: {sats_cosechados} Satoshis{RESET}")
+            try:
+                from faucet_bot.database import oracle
+                stats = oracle.get_stats()
+                balance_display = f"{stats['total']} Satoshis (Hoy: {stats['today']})"
+            except:
+                balance_display = f"{sats_cosechados} Satoshis (Memoria)"
+            
+            print(f"💰 {AMARILLO}BALANCE ACUMULADO: {balance_display}{RESET}")
             print(f"--------------------------------------------------")
             print(f"Presiona Ctrl+C para detener todos los sistemas.")
             
