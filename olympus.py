@@ -40,7 +40,12 @@ RESET = '\033[0m'
 BOLD = '\033[1m'
 
 # --- RUTAS DE ARGOS (Configuración) ---
-ARGOS_DIR = "/home/medalcode/Antigravity/Argos"
+# --- RUTAS DE ARGOS (Configuración Dinámica) ---
+# Busca la carpeta Argos "al lado" de la carpeta Hermes
+ROOT_DIR = os.path.dirname(os.path.abspath(__file__)) # .../Hermes
+PARENT_DIR = os.path.dirname(ROOT_DIR) # .../Antigravity (o Downloads en el cel)
+ARGOS_DIR = os.path.join(PARENT_DIR, "Argos")
+
 ARGOS_PYTHON = os.path.join(ARGOS_DIR, "venv/bin/python")
 ARGOS_SCRIPT = os.path.join(ARGOS_DIR, "main.py")
 
