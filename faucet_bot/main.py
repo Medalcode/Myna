@@ -65,15 +65,31 @@ class FaucetBot:
             print(f"   [Init] Launching browser [Session: {self.session_id}]")
             
             try:
-                # Launch browser (Ghost Mode enabled)
-                # 'headless=True' hace que el navegador sea invisible
+                # --- CONFIGURACIÓN DE SIGILO V2 ---
+                # 1. User Agent Aleatorio
+                try:
+                    from fake_useragent import UserAgent
+                    ua = UserAgent()
+                    user_agent = ua.random
+                    print(f"   [Stealth] Máscara: {user_agent[:25]}...")
+                except:
+                    user_agent = None
+
+                # 2. Argumentos Anti-Detección Avanzados
                 browser = p.chromium.launch(
                     headless=True, 
                     proxy=self.proxy_config,
-                    args=["--disable-blink-features=AutomationControlled"] # Extra stealth
+                    args=[
+                        "--disable-blink-features=AutomationControlled",
+                        "--no-sandbox",
+                        "--disable-setuid-sandbox"
+                    ]
                 )
                 
-                context_options = {}
+                context_options = {
+                    "user_agent": user_agent,
+                    "viewport": {'width': 1280, 'height': 720}
+                }
                 if os.path.exists(self.state_file):
                     print(f"   [Cookie] Loading session...")
                     context_options["storage_state"] = self.state_file
