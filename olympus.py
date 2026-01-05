@@ -7,7 +7,15 @@ import select
 from datetime import datetime
 import sys
 
-# --- MODIFICACIÓN IMPORTANTE ---
+# --- INTEGRACIÓN PANTEÓN (SDK) ---
+try:
+    from panteon import Panteon
+    PANTEON_AVAILABLE = True
+except ImportError:
+    PANTEON_AVAILABLE = False
+    print("⚠️ Panteon SDK no encontrado. Se usará modo local aislado.")
+
+# --- HERMES BOT IMPORT ---
 # Añadir el directorio actual al path para importar faucet_bot
 sys.path.append(os.path.join(os.getcwd(),'faucet_bot'))
 try:
@@ -23,7 +31,7 @@ except ImportError as e:
         HERMES_AVAILABLE = False
         print(f"Advertencia: No se pudo importar Hermes ({e})")
 
-# --- CONFIGURACIÓN DE LOGS ---
+# --- CONFIGURACIÓN DE LOGS (LEGACY + PANTEON) ---
 logging.basicConfig(
     filename='olympus_operations.log',
     level=logging.INFO,
@@ -39,11 +47,9 @@ ROJO = '\033[91m'
 RESET = '\033[0m'
 BOLD = '\033[1m'
 
-# --- RUTAS DE ARGOS (Configuración) ---
-# --- RUTAS DE ARGOS (Configuración Dinámica) ---
-# Busca la carpeta Argos "al lado" de la carpeta Hermes
-ROOT_DIR = os.path.dirname(os.path.abspath(__file__)) # .../Hermes
-PARENT_DIR = os.path.dirname(ROOT_DIR) # .../Antigravity (o Downloads en el cel)
+# --- RUTAS ---
+ROOT_DIR = os.path.dirname(os.path.abspath(__file__)) 
+PARENT_DIR = os.path.dirname(ROOT_DIR) 
 ARGOS_DIR = os.path.join(PARENT_DIR, "Argos")
 
 ARGOS_PYTHON = os.path.join(ARGOS_DIR, "venv/bin/python")
@@ -56,15 +62,28 @@ status_last_action = ""
 sats_cosechados = 0
 running = True
 
+# Inicializar Panteón para Hermes
+if PANTEON_AVAILABLE:
+    panteon_hermes = Panteon("HERMES")
+else:
+    panteon_hermes = None
+
 def log_event(source, message, level="INFO"):
+    """Wrapper híbrido: Loguea en archivo local y envía a Panteón (Hestia)"""
+    # 1. Log Local
     if level == "INFO": logging.info(f"[{source}] {message}")
     elif level == "WARNING": logging.warning(f"[{source}] {message}")
     elif level == "ERROR": logging.error(f"[{source}] {message}")
+    
+    # 2. Log Panteón (Remoto/Centralizado)
+    if panteon_hermes and source == "HERMES":
+        panteon_hermes.log(message, level)
 
 def monitor_argos_subprocess():
     """Ejecuta Argos como subproceso y monitorea su salida"""
     global status_argos, running
     
+    # Verificación de existencia de Argos
     if not os.path.exists(ARGOS_SCRIPT):
         status_argos = f"{ROJO}No se encontró Argos en {ARGOS_DIR}{RESET}"
         return
@@ -84,18 +103,24 @@ def monitor_argos_subprocess():
         status_argos = f"{VERDE}Proceso iniciado (PID: {process.pid}){RESET}"
         
         while running and process.poll() is None:
+            # Leer stdout línea por línea
             output = process.stdout.readline()
             if output:
                 line = output.strip()
-                if line and not line.startswith("DEBUG"): # Filtrar ruido si es necesario
+                if line and not line.startswith("DEBUG"): 
                     status_argos = f"{VERDE}{line[:70]}{RESET}"
             
+            # Leer stderr
             err = process.stderr.readline()
             if err:
                 log_event("ARGOS_ERR", err.strip(), "ERROR")
-                
+                # Si Argos falla, lo reportamos a Panteón
+                if PANTEON_AVAILABLE:
+                     panteon_hermes.log(f"Alerta Argos: {err.strip()}", "ERROR")
+
         if running:
             status_argos = f"{ROJO}Argos se detuvo inesperadamente{RESET}"
+            if PANTEON_AVAILABLE: panteon_hermes.log("Argos se detuvo inesperadamente", "ERROR")
             
     except Exception as e:
         status_argos = f"{ROJO}Error ejecutando Argos: {e}{RESET}"
@@ -113,9 +138,8 @@ def bot_hermes_reales():
         status_hermes = f"{ROJO}Librería 'faucet_bot' no encontrada.{RESET}"
         return
 
-    proxies_file = os.path.join(os.getcwd(), 'faucet_bot', 'proxies.txt')
+    proxies_file = os.path.join(ROOT_DIR, 'faucet_bot', 'proxies.txt')
     proxies = load_proxies(proxies_file)
-    target_url = "https://bot.sannysoft.com/" # URL DE PRUEBA INICIAL
 
     if not proxies:
         status_hermes = f"{AMARILLO}¡Faltan Proxies! Configura proxies.txt{RESET}"
@@ -129,6 +153,17 @@ def bot_hermes_reales():
     while running:
         cycle_start = time.time()
         
+        # Obtener configuración dinámica de Hestia (Panteón)
+        wait_cycle_seconds = 3600 # Default 1 hora
+        if PANTEON_AVAILABLE:
+            remote_delay = panteon_hermes.get_config("hermes_ciclo_delay")
+            if remote_delay:
+                try:
+                    wait_cycle_seconds = int(remote_delay)
+                    log_event("HERMES", f"Configuración sincronizada: Ciclo de {wait_cycle_seconds}s")
+                except:
+                    pass
+
         for i, proxy in enumerate(proxies):
             if not running: break
             
@@ -136,21 +171,20 @@ def bot_hermes_reales():
             log_event("HERMES", f"Iniciando sesión con proxy {proxy}")
             
             try:
-                # Instancia real de Hermes con Persistencia
-                session_id = f"account_{i+1:03d}" # e.g. account_001
+                # Instancia real de Hermes
+                session_id = f"account_{i+1:03d}" 
                 bot = FaucetBot(proxy, session_id=session_id)
                 
                 status_last_action = f"Ejecutando recetas en {session_id}..."
-                # Ya no pasamos target_url, Hermes usa las recetas activas internamente
+                
+                # EJECUCIÓN REAL
+                # Pasamos logger custom si fuera posible, pero Hermes usa print/logger interno.
                 bot.run_recipes() 
                 
-                # Simulación de ganancia para demo (ya que bot.sannysoft no da dinero)
-                if "sannysoft" in target_url:
-                    sats_cosechados += 0 # No sumar fake en prod, o descomentar para test
-                    status_last_action = "Test de detección completado (ver navegador)"
-                else:
-                    sats_cosechados += 10 # Placeholder
-                    
+                # Reporte de latido a Panteón
+                if PANTEON_AVAILABLE:
+                     panteon_hermes.log(f"Sesión completada: {session_id}", "INFO")
+
                 status_hermes = f"{VERDE}Sesión finalizada correctamente.{RESET}"
                 
             except Exception as e:
@@ -164,15 +198,14 @@ def bot_hermes_reales():
                 time.sleep(1)
                 status_last_action = f"Esperando cambio de cuenta: {s}s"
         
-        # Espera de ciclo (1 hora aprox)
+        # Espera de ciclo
         elapsed = time.time() - cycle_start
-        wait_cycle = max(60, 3600 - elapsed)
+        wait_for = max(60, wait_cycle_seconds - elapsed)
         
         status_hermes = f"{AMARILLO}Ciclo completado.{RESET}"
-        log_event("HERMES", "Ciclo de cuentas completado. Durmiendo hasta la próxima hora.")
+        log_event("HERMES", "Ciclo de cuentas completado. Durmiendo.")
         
-        # Espera larga dividida en chunks para poder interrumpir
-        for m in range(int(wait_cycle), 0, -1):
+        for m in range(int(wait_for), 0, -1):
             if not running: break
             if m % 10 == 0:
                 status_last_action = f"Siguiente ciclo en {m//60} min {m%60} s"
@@ -189,7 +222,9 @@ def mostrar_pantalla():
             now = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
             
             print(f"{BOLD}=================================================={RESET}")
-            print(f"      🏛️  OLYMPUS COMMAND CENTER (PRODUCCIÓN){RESET}")
+            panteon_status = f"{VERDE}ON ({panteon_hermes.modo}){RESET}" if PANTEON_AVAILABLE else f"{ROJO}OFF{RESET}"
+            
+            print(f"      🏛️  OLYMPUS COMMAND CENTER (PANTEON: {panteon_status})")
             print(f"=================================================={RESET}")
             print(f"📅 {now}")
             print(f"📄 Logs: olympus_operations.log")
@@ -199,7 +234,7 @@ def mostrar_pantalla():
             print(f"    └── Estado: {status_argos}")
             print(f"")
             print(f"🚀 [HERMES - Faucets]:")
-            proxies_loaded = load_proxies(os.path.join(os.getcwd(), 'faucet_bot', 'proxies.txt')) if HERMES_AVAILABLE else []
+            proxies_loaded = load_proxies(os.path.join(ROOT_DIR, 'faucet_bot', 'proxies.txt')) if HERMES_AVAILABLE else []
             print(f"    └── Proxies Cargados: {len(proxies_loaded)}")
             print(f"    └── Estado: {status_hermes}")
             print(f"    └── Acción: {status_last_action}")
@@ -210,7 +245,7 @@ def mostrar_pantalla():
                 stats = oracle.get_stats()
                 balance_display = f"{stats['total']} Satoshis (Hoy: {stats['today']})"
             except:
-                balance_display = f"{sats_cosechados} Satoshis (Memoria)"
+                balance_display = f"N/A"
             
             print(f"💰 {AMARILLO}BALANCE ACUMULADO: {balance_display}{RESET}")
             print(f"--------------------------------------------------")

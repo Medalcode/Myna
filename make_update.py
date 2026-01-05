@@ -6,6 +6,7 @@ def zip_hermes():
     # Archivos a incluir en la actualización
     target_files = [
         'olympus.py',
+        'panteon.py',
         'faucet_bot/__init__.py',
         'faucet_bot/main.py',
         'faucet_bot/requirements.txt',
@@ -20,7 +21,7 @@ def zip_hermes():
     if os.path.exists(session_file):
         target_files.append(session_file)
 
-    output_filename = "update_hermes.zip"
+    output_filename = "update_hermes_v2.zip"
     
     with zipfile.ZipFile(output_filename, 'w', zipfile.ZIP_DEFLATED) as zipf:
         for file in target_files:
