@@ -31,6 +31,13 @@ except ImportError as e:
         HERMES_AVAILABLE = False
         print(f"Advertencia: No se pudo importar Hermes ({e})")
 
+# --- MONITOR BATERÍA ---
+try:
+    from battery_monitor import BatteryMonitor
+    BATTERY_AVAILABLE = True
+except:
+    BATTERY_AVAILABLE = False
+
 # --- CONFIGURACIÓN DE LOGS (LEGACY + PANTEON) ---
 logging.basicConfig(
     filename='olympus_operations.log',
@@ -67,6 +74,43 @@ if PANTEON_AVAILABLE:
     panteon_hermes = Panteon("HERMES")
 else:
     panteon_hermes = None
+
+def wizard_config():
+    """Asistente de configuración inicial (evita usar Nano)"""
+    try:
+        from faucet_bot.config_loader import load_config, save_config
+        config = load_config()
+        
+        # Chequeo de API Key de Captcha
+        if not config.get("captcha", {}).get("api_key"):
+            print("\n" + "="*50)
+            print(f"{AMARILLO}🧩 CONFIGURACIÓN DE CAPTCHA SOLVER{RESET}")
+            print("="*50)
+            print("Para cobrar 24/7, Hermes necesita resolver captchas.")
+            print("Ingresa tu API KEY de 2captcha.com (o presiona ENTER para saltar):")
+            print(f"{AZUL}Tip: Cuesta ~$0.50 USD por 1000 captchas.{RESET}")
+            
+            key = input(f"\n{VERDE}API KEY > {RESET}").strip()
+            
+            if key:
+                config["captcha"]["api_key"] = key
+                
+                # Preguntar también por credenciales de Cointiply si faltan
+                if not config.get("cointiply", {}).get("email"):
+                    print(f"\n{AMARILLO}📧 CREDENCIALES COINTIPLY{RESET}")
+                    email = input("Email > ").strip()
+                    password = input("Password > ").strip()
+                    config["cointiply"]["email"] = email
+                    config["cointiply"]["password"] = password
+                
+                save_config(config)
+                print(f"\n{VERDE}✅ ¡Configuración Guardada! Arrancando...{RESET}")
+                time.sleep(2)
+            else:
+                print(f"\n{ROJO}⚠️ Sin API Key. Hermes dependerá de la suerte.{RESET}")
+                time.sleep(2)
+    except Exception as e:
+        print(f"Error en Wizard: {e}")
 
 def log_event(source, message, level="INFO"):
     """Wrapper híbrido: Loguea en archivo local y envía a Panteón (Hestia)"""
@@ -216,6 +260,12 @@ def mostrar_pantalla():
     print("\nIniciando Dashboard...\n")
     time.sleep(1)
     
+    # Inicializar Monitor Batería
+    batt_monitor = BatteryMonitor() if BATTERY_AVAILABLE else None
+
+    # Ejecutar Wizard si es necesario
+    wizard_config()
+
     try:
         while running:
             os.system('cls' if os.name == 'nt' else 'clear')
@@ -227,6 +277,17 @@ def mostrar_pantalla():
             print(f"      🏛️  OLYMPUS COMMAND CENTER (PANTEON: {panteon_status})")
             print(f"=================================================={RESET}")
             print(f"📅 {now}")
+            
+            # --- INFO BATERÍA ---
+            if batt_monitor:
+                batt_monitor.get_status() # Refresh
+                batt_info = batt_monitor.get_summary()
+                batt_health = batt_monitor.check_health()
+                color_batt = ROJO if batt_health == "CRITICAL" else (AMARILLO if batt_health == "LOW" else VERDE)
+                print(f"🔋 Energía: {color_batt}{batt_info}{RESET}")
+            else:
+                 print(f"🔋 Energía: N/A (Instalar Termux:API)")
+
             print(f"📄 Logs: olympus_operations.log")
             print(f"--------------------------------------------------")
             print(f"")

@@ -1,23 +1,28 @@
 import random
 import time
 import os
+import logging
 from urllib.parse import urlparse
 from playwright.sync_api import sync_playwright
 from playwright_stealth import Stealth
-
+from hermes_db import log_run
 # Importar las recetas
 try:
-    from recipes import ACTIVE_RECIPES
+    from recipes import ACTIVE_RECIPES, CointiplyRecipe
     from database import oracle
 except ImportError:
     try:
-        from faucet_bot.recipes import ACTIVE_RECIPES
+        from faucet_bot.recipes import ACTIVE_RECIPES, CointiplyRecipe
         from faucet_bot.database import oracle
     except:
         ACTIVE_RECIPES = []
+        CointiplyRecipe = None
         oracle = None
         print("[Error] No se pudieron importar las dependencias (recetas/db).")
-
+# Ensure recipe list contains Cointiply if empty
+if not ACTIVE_RECIPES and CointiplyRecipe:
+    ACTIVE_RECIPES = [CointiplyRecipe()]
+    print("[Info] CointiplyRecipe cargada manualmente en ACTIVE_RECIPES.")
 class FaucetBot:
     def __init__(self, proxy_string, session_id="default"):
         self.proxy_config = self._parse_proxy(proxy_string)
@@ -110,7 +115,15 @@ class FaucetBot:
                             
                             self._human_like_behavior(page)
                             
-                            recipe.run(page, logger=print)
+                            # --- LOGGER QUE CONECTA CON OLYMPUS ---
+                            def dedicated_logger(msg, level="INFO"):
+                                print(msg) # Siempre a pantalla
+                                # Escribir en log oficial
+                                if level == "INFO": logging.info(msg)
+                                elif level == "ERROR": logging.error(msg)
+                                elif level == "WARN": logging.warning(msg)
+
+                            recipe.run(page, logger=dedicated_logger)
                             
                             # Guardar estado
                             context.storage_state(path=self.state_file)
@@ -126,6 +139,8 @@ class FaucetBot:
                                 )
 
                             time.sleep(random.randint(3, 7))
+                            # Registrar éxito en la base SQLite
+                            log_run(self.proxy_config.get('server', ''), recipe.name, "WIN", 0, "")
                             break # Éxito, salir del bucle
                             
                         except Exception as e:
@@ -136,6 +151,8 @@ class FaucetBot:
                                 time.sleep(wait_time)
                             else:
                                 print(f"   [Error] Receta {recipe.name} falló definitivamente.")
+                                # Registrar fallo en la base SQLite
+                                log_run(self.proxy_config.get('server', ''), recipe.name, "FAIL", 0, str(e))
                                 if oracle:
                                     oracle.log_earning(self.session_id, recipe.name, 0, self.proxy_config['server'], status=f"ERROR_FINAL: {e}")
                 
@@ -152,15 +169,31 @@ def load_proxies(file_path):
     except FileNotFoundError:
         return []
 
+# Removed old global proxy handling; using smart proxy manager
+
 def main():
-    proxies_file = 'proxies.txt'
-    proxies = load_proxies(proxies_file)
-    if not proxies: return
+    # Load proxies from file
+    proxies = load_proxies('proxies.txt')
+    if not proxies:
+        print("No proxies loaded. Exiting.")
+        return
+
     print(f"Running standalone mode with {len(proxies)} proxies.")
-    for i, proxy in enumerate(proxies):
-        bot = FaucetBot(proxy, session_id=f"test_account_{i}")
+    # Smart proxy selector that tracks usage and health
+    from faucet_bot.proxy_manager import get_next_proxy
+
+    attempts = 0
+    max_attempts = len(proxies) * 2  # allow a couple of extra cycles
+    while attempts < max_attempts:
+        proxy = get_next_proxy(proxies)
+        if not proxy:
+            print("[Error] No healthy proxy available. Stopping.")
+            break
+        bot = FaucetBot(proxy, session_id=f"test_account_{attempts}")
         bot.run_recipes()
-        break 
+        attempts += 1
+
+    print("[Done] All proxy cycles completed.")
 
 if __name__ == "__main__":
     main()

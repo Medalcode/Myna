@@ -1,65 +1,69 @@
-# 🦅 Proyecto Hermes: Automatización Distribuida (Mobile Cloud)
+# Hermes V3.1: Mobile Autonomous Faucet Bot ⚡📱
 
-Hermes es una red de bots autónomos diseñados para operar en dispositivos móviles de bajo consumo (Android/Termux), orquestados centralmente por Hestia y supervisados vía Panteón SDK.
+![Python](https://img.shields.io/badge/Python-3.11+-blue.svg)
+![Platform](https://img.shields.io/badge/Platform-Termux%20%7C%20Linux-green.svg)
+![Status](https://img.shields.io/badge/Status-Stable-brightgreen.svg)
 
-## 🚀 Características Principales
+Hermes es un bot autónomo diseñado para operar 24/7 en dispositivos Android (vía Termux) o servidores Linux. Su objetivo principal es interactuar con faucets de criptomonedas (actualmente **Cointiply**) de manera indetectable, gestionando sesiones, proxies y resolución de captchas.
 
-1.  **Arquitectura Móvil-Nativa**: Diseñado para correr 24/7 en teléfonos reciclados usando Termux + Ubuntu (Proot).
-2.  **Mente de Enjambre (Hestia + Panteón)**:
-    - **Panteon SDK**: Librería de integración que conecta Hermes con el cerebro central Hestia.
-    - Configuración remota de ciclos y pausas.
-    - Logging centralizado de errores y ganancias.
-3.  **Stealth Avanzado**:
-    - Rotación de Proxies por sesión.
-    - Inyección de User-Agents realistas (fake-useragent).
-    - Persistencia de Cookies para evasión de Captchas.
-4.  **Objetivos Activos**:
-    - 🟢 **Cointiply**: Automatización de Roll Faucet con espera inteligente de Login.
-    - 🔴 **FreeBitcoin**: (Desactivado/Legacy).
+## ✨ Características Principales
 
-## 📂 Nueva Estructura del Proyecto
+- **⚡ 100% Autónomo**: Diseñado para "Fire & Forget". Se ejecuta en segundo plano en tu teléfono.
+- **📱 Nativo para Termux**: Optimizado para correr en entornos móviles con batería limitada.
+- **🕵️ Evasión Avanzada**: Utiliza `playwright-stealth` y patrones de comportamiento humano aleatorios.
+- **🔄 Rotación de Proxies Inteligente**: Chequeo de salud automático y rotación de IPs para evitar baneos.
+- **💾 Base de Datos Local**: Registro detallado de cada ejecución (ganancias, errores) en SQLite (`hermes.db`).
+- **📊 Dashboard en Terminal**: Interfaz visual para monitorear estado, batería y últimas ganancias.
+- **🧩 Captcha Solver (Opcional)**: Integración lista para usar con **2Captcha** (requiere API Key).
 
-- **`olympus.py`**: Centro de Mando Local. Muestra estado en tiempo real, saldos y logs.
-- **`panteon.py`**: SDK de comunicación. Si detecta Hestia (Local o Remoto), envía telemetría.
-- **`faucet_bot/`**:
-  - `main.py`: Motor V8 de navegación (Playwright).
-  - `recipes/`: Lógica específica por sitio (e.g. `cointiply.py`).
-  - `sessions/`: Almacenamiento de cookies persistentes.
-- **`GUIA_MOTOROLA.md`**: Guía paso a paso para despliegue en hardware específico.
+## 🚀 Instalación Rápida (Android / Termux)
 
-## 📱 Instalación en Android (Termux)
-
-1.  **Entorno Base**:
+1.  **Instalar Termux y dependencias:**
 
     ```bash
-    pkg install proot-distro
+    pkg update && pkg upgrade -y
+    pkg install proot-distro git python -y
     proot-distro install ubuntu
     proot-distro login ubuntu
     ```
 
-2.  **Despliegue Rápido (vía Zip)**:
-    Transfiere `update_hermes_v2.zip` al dispositivo:
+2.  **Clonar y configurar:**
 
     ```bash
-    cp /sdcard/Download/update_hermes_v2.zip ~/hermes/
-    cd ~/hermes
-    unzip -o update_hermes_v2.zip
+    git clone https://github.com/MedalCode/Hermes.git
+    cd Hermes
+    bash termux_install.sh  # Instala Playwright, dependencias y venv
     ```
 
-3.  **Primer Inicio**:
+3.  **Ejecutar:**
     ```bash
     source venv/bin/activate
-    python olympus.py
+    python3 olympus.py
     ```
 
-## 🧠 Integración Panteón
+## ⚙️ Configuración
 
-Si el archivo `panteon.py` está presente, Hermes buscará automáticamente un servidor Hestia.
+Al primer inicio, el **Asistente de Configuración** te guiará:
 
-- **Modo Local**: Si existe `hestia.db`, escribe directo en SQL.
-- **Modo Remoto**: Si no, intenta contactar a `http://127.0.0.1:5000` (o IP del PC).
+1.  **Proxies**: Añade tus proxies en `faucet_bot/proxies.txt` (formato `ip:puerto` o `user:pass@ip:puerto`).
+2.  **Credenciales**: Ingresa tu usuario/pass de Cointiply cuando se solicite.
+3.  **Captcha**: (Opcional) Ingresa tu API Key de 2Captcha para automatización total.
 
-## 🛠 Comandos Útiles
+## 📂 Estructura del Proyecto
 
-- **Ver Logs recientes**: `cat olympus_operations.log | tail -n 20`
-- **Empaquetar actualización (en PC)**: `python make_update.py`
+- `olympus.py`: **Cerebro**. Orquestador principal, dashboard y monitor de procesos.
+- `faucet_bot/`: Núcleo del bot de navegación.
+  - `main.py`: Lógica de rotación y ejecución de recetas.
+  - `recipes/`: Scripts específicos para cada sitio (e.g., `cointiply.py`).
+  - `proxy_manager.py`: Sistema de salud y selección de proxies.
+- `hermes_db.py`: Módulo de base de datos SQLite y reportes.
+- `BITACORA_HERMES.md`: Historial de cambios y roadmap.
+
+## 🤝 Contribuciones & Roadmap
+
+Revisa `BITACORA_HERMES.md` para ver el estado actual y tareas pendientes.
+¡PRs bienvenidas! Especialmente para nuevas recetas de faucets o mejoras en la evasión.
+
+---
+
+**Disclaimer**: Este software es para fines educativos. El uso de bots puede violar los Términos de Servicio de algunos sitios web. Úsalo bajo tu propia responsabilidad.
