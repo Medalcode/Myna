@@ -98,5 +98,33 @@ class OlympusDB:
             """)
             row = cursor.fetchone()
             return dict(row) if row else {}
+    
+    def get_workers(self) -> List[Dict[str, Any]]:
+        with self.get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("SELECT name, status, last_heartbeat FROM workers")
+            return [dict(row) for row in cursor.fetchall()]
+    
+    def get_runs(self, limit: int = 10) -> List[Dict[str, Any]]:
+        with self.get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("""
+                SELECT worker_name, timestamp, result, earnings, details
+                FROM runs
+                ORDER BY timestamp DESC
+                LIMIT ?
+            """, (limit,))
+            return [dict(row) for row in cursor.fetchall()]
+    
+    def get_logs(self, limit: int = 20) -> List[Dict[str, Any]]:
+        with self.get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("""
+                SELECT timestamp, worker_name, level, message
+                FROM logs
+                ORDER BY timestamp DESC
+                LIMIT ?
+            """, (limit,))
+            return [dict(row) for row in cursor.fetchall()]
 
 db = OlympusDB()
