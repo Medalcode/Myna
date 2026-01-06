@@ -1,0 +1,24 @@
+cd ~
+ls -la
+pkill -f hestia
+pkill -f hefesto
+pkill -f panoptes
+pkill -f argos
+pkill -f cerbero
+pkill -f olympus
+rm -rf Hestia
+rm -rf Hefesto
+rm -rf Panoptes
+rm -rf Argos
+cd Hermes
+rm -f olympus.py panteon.py hermes_db.py battery_monitor.py
+rm -f make_update.py debug_import.py olympus.db olympus_operations.log
+rm -f update_hermes*.zip hestia.db panteon.db
+mkdir -p data logs faucet_bot/sessions
+find . -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
+find . -type f -name "*.pyc" -delete 2>/dev/null || true
+echo "=== LIMPIEZA COMPLETADA ==="
+ls -la ~/
+echo ""
+echo "Verificando Hermes:"
+ls -la hermes.py start.sh data/ logs/

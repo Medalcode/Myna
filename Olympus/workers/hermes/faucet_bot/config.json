@@ -1,0 +1,24 @@
+{
+    "cointiply": {
+        "email": "",
+        "password": "",
+        "active": true
+    },
+    "captcha": {
+        "provider": "2captcha",
+        "api_key": ""
+    },
+    "system": {
+        "headless": true,
+        "proxy_file": "proxies.txt",
+        "cycle_delay_seconds": 3600,
+        "retry_attempts": 3,
+        "human_delay_min": 10,
+        "human_delay_max": 30
+    },
+    "logging": {
+        "level": "INFO",
+        "file": "../logs/hermes.log",
+        "console": true
+    }
+}

@@ -1,65 +1,79 @@
-#!/bin/bash
-# Installer for Hermes Faucet Bot on Android (Termux)
+#!/data/data/com.termux/files/usr/bin/bash
 
-echo "📱 Iniciando Configuración de Hermes en Motorola..."
+# Hermes V4.0 - Termux Installation Script
+# This script sets up Hermes bot on Android via Termux
 
-# 1. Actualizar Termux e instalar utilidades básicas
-echo "[1/4] Actualizando paquetes de Termux..."
+set -e  # Exit on error
+
+echo "=================================================="
+echo "  🏛️  HERMES V4.0 - INSTALADOR PARA TERMUX"
+echo "=================================================="
+echo ""
+
+# Colors
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+RED='\033[0;31m'
+NC='\033[0m' # No Color
+
+# Step 1: Update packages
+echo -e "${YELLOW}[1/6] Actualizando paquetes del sistema...${NC}"
 pkg update -y && pkg upgrade -y
-pkg install proot-distro git wget -y
 
-# 2. Instalar Ubuntu (El entorno virtual)
-echo "[2/4] Instalando Ubuntu (esto puede tardar unos minutos)..."
-proot-distro install ubuntu
+# Step 2: Install system dependencies
+echo -e "${YELLOW}[2/6] Instalando dependencias del sistema...${NC}"
+pkg install -y python python-pip git wget
 
-# 3. Preparar el script de instalación interna (dentro de Ubuntu)
-cat <<EOF > install_inside_ubuntu.sh
-#!/bin/bash
-echo "🐧 Configurando Ubuntu..."
-apt update && apt upgrade -y
-
-# Instalar Python y dependencias de sistema para Playwright
-echo "📥 Instalando Python y dependencias..."
-apt install -y python3 python3-pip python3-venv \
-    libnss3 libatk1.0-0 libatk-bridge2.0-0 libcups2 libdrm2 \
-    libxkbcommon0 libxcomposite1 libxdamage1 libxfixes3 libxrandr2 \
-    libgbm1 libasound2
-
-# Moverse al directorio del bot
-cd /root/hermes
-
-# Crear entorno virtual
-echo "🐍 Creando Virtual Environment..."
-python3 -m venv venv
-source venv/bin/activate
-
-# Instalar liberías
-echo "📦 Instalando librerías de Python..."
+# Step 3: Install Python dependencies
+echo -e "${YELLOW}[3/6] Instalando dependencias de Python...${NC}"
+pip install --upgrade pip
 pip install -r faucet_bot/requirements.txt
+
+# Step 4: Install Playwright
+echo -e "${YELLOW}[4/6] Instalando Playwright...${NC}"
 pip install playwright
-playwright install-deps
 playwright install chromium
 
-echo "✅ ¡Instalación Completa!"
-echo "Para iniciar el bot ejecuta: ./start_bot.sh"
-EOF
-chmod +x install_inside_ubuntu.sh
+# Step 5: Create necessary directories
+echo -e "${YELLOW}[5/6] Creando estructura de directorios...${NC}"
+mkdir -p data
+mkdir -p logs
+mkdir -p faucet_bot/sessions
 
-# 4. Copiar archivos al entorno Ubuntu
-echo "[3/4] Migrando Hermes a Ubuntu..."
-# Asumimos que el usuario corre esto desde la carpeta donde copió los archivos
-mkdir -p /data/data/com.termux/files/usr/var/lib/proot-distro/installed-rootfs/ubuntu/root/hermes
-cp -r * /data/data/com.termux/files/usr/var/lib/proot-distro/installed-rootfs/ubuntu/root/hermes/
-mv install_inside_ubuntu.sh /data/data/com.termux/files/usr/var/lib/proot-distro/installed-rootfs/ubuntu/root/
+# Step 6: Set permissions
+echo -e "${YELLOW}[6/6] Configurando permisos...${NC}"
+chmod +x hermes.py
 
-# 5. Crear script de arranque rápido
-echo "[4/4] Creando acceso directo..."
-echo "proot-distro login ubuntu -- bash -c 'cd /root/hermes && source venv/bin/activate && python olympus.py'" > start_hermes.sh
-chmod +x start_hermes.sh
-
-echo "🎉 ¡Todo Listo!"
-echo "Para terminar la instalación (solo la primera vez), ejecuta:"
-echo "proot-distro login ubuntu -- bash /root/install_inside_ubuntu.sh"
+# Optional: Install Termux:API for battery monitoring
 echo ""
-echo "Luego, para usar el bot día a día, solo escribe:"
-echo "./start_hermes.sh"
+echo -e "${YELLOW}¿Deseas instalar Termux:API para monitoreo de batería? (s/n)${NC}"
+read -r response
+if [[ "$response" =~ ^([sS][iI]|[sS])$ ]]; then
+    pkg install -y termux-api
+    echo -e "${GREEN}✅ Termux:API instalado${NC}"
+else
+    echo -e "${YELLOW}⚠️ Termux:API no instalado. El monitoreo de batería no estará disponible.${NC}"
+fi
+
+echo ""
+echo "=================================================="
+echo -e "${GREEN}✅ INSTALACIÓN COMPLETADA${NC}"
+echo "=================================================="
+echo ""
+echo "📋 Próximos pasos:"
+echo ""
+echo "1. Configura tus proxies:"
+echo "   nano faucet_bot/proxies.txt"
+echo ""
+echo "2. Ejecuta Hermes:"
+echo "   python hermes.py"
+echo ""
+echo "3. El asistente de configuración te guiará en el primer arranque"
+echo ""
+echo "📚 Para más información, consulta README.md"
+echo ""
+echo -e "${YELLOW}⚠️ IMPORTANTE:${NC}"
+echo "   - Mantén el dispositivo conectado al cargador"
+echo "   - Usa una app como 'Caffeine' para evitar que la CPU se duerma"
+echo "   - Revisa los logs en: logs/hermes.log"
+echo ""
