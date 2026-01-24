@@ -56,9 +56,13 @@ Open your browser at **`http://localhost:8000`**.
 src/
 ├── core/                 # Domain Layer (Business Logic)
 │   ├── domain_services.py  # Stats, Cleaning, Clustering Logic
-│   └── models.py           # Data Classes (Session)
+│   ├── models.py           # Data Classes (Session)
+│   └── ports.py            # [NEW] Interfaces for Repositories (Persistence)
 ├── adapters/             # Interface Layer
 │   ├── api/                # FastAPI Router (Backend)
+│   │   ├── router.py       # API Endpoints
+│   │   └── dependencies.py # [NEW] Dependency Injection
+│   ├── repositories/       # [NEW] Data Persistence (Sessions/Storage)
 │   ├── fs/                 # File System Adapter
 │   └── visualization/      # Plotting Adapter (Plotly)
 └── main.py               # Application Entry Point
@@ -78,9 +82,12 @@ PYTHONPATH=. pytest tests/
 
 ## 🔄 History
 
-- **V5.0 (Current)**: Full migration to FastAPI + Custom UI. Hexagonal Architecture. Plotly.
+- **V5.1 (Scalability Refactor)**: Stateless Architecture, Repository Pattern, Multi-session support.
+- **V5.0**: Full migration to FastAPI + Custom UI. Hexagonal Architecture. Plotly.
 - **V4.0**: Refactor to Modular Structure (Gradio).
 - **Legacy**: Monolithic script `final_eval3mineria.py`.
+
+> 📘 Para ver el detalle completo de cambios y tareas pendientes, consulta la [Bitácora de Desarrollo](BITACORA.md).
 
 ---
 
