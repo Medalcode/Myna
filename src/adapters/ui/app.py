@@ -128,8 +128,8 @@ def create_app():
 
     # --- UI LAYOUT ---
     
-    with gr.Blocks(title="HMS: Hermes Data Mining") as app:
-        gr.Markdown("## 💎 Hermes: Minería de Datos Modular")
+    with gr.Blocks(title="Myna: Data Mining") as app:
+        gr.Markdown("## ✨ Myna: Minería de Datos Modular")
         
         # State
         session_state = gr.State(AnalysisSession())

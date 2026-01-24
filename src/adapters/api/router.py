@@ -13,7 +13,7 @@ from src.core.domain_services import StatisticalAnalyzer, DataCleaner, DataScale
 from src.adapters.fs.file_io import FileSystemAdapter
 from src.adapters.visualization.plotter import PlottingAdapter
 
-app = FastAPI(title="Hermes API")
+app = FastAPI(title="Myna API")
 
 # Mount Static & Templates
 app.mount("/static", StaticFiles(directory="static"), name="static")

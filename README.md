@@ -1,10 +1,10 @@
-# 💎 Hermes: Modular Data Mining Tool
+# ✨ Myna: Intelligent Data Mining Tool
 
 > **Refactored V5.0**: Now powered by **FastAPI**, **Hexagonal Architecture**, and **Vanilla JS**.
 
-Hermes is a powerful, modular data mining application designed to perform descriptive statistics, data cleaning, outlier detection, clustering, and interactive visualization on CSV and Excel datasets.
+Myna is a powerful, modular data mining application designed to perform descriptive statistics, data cleaning, outlier detection, clustering, and interactive visualization on CSV and Excel datasets.
 
-![Hermes UI](file:///home/medalcode/.gemini/antigravity/brain/7cba53f4-27f8-4935-98f6-51a16f5e0069/hermes_new_ui_1768885882639.png)
+![Myna UI](file:///home/medalcode/.gemini/antigravity/brain/7cba53f4-27f8-4935-98f6-51a16f5e0069/hermes_new_ui_1768885882639.png)
 
 ## 🚀 Key Features
 
