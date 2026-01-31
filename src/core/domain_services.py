@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
-from scipy.stats import skew, kurtosis, shapiro
+import numpy as np
+# from scipy.stats import skew, kurtosis, shapiro (Removed for Vercel size limit)
 from typing import List, Tuple, Dict, Any
 
 class StatisticalAnalyzer:
@@ -40,8 +41,8 @@ class StatisticalAnalyzer:
             return pd.DataFrame()
 
         return pd.DataFrame({
-            'Curtosis (Normal = 0)': df_numeric.apply(kurtosis, fisher=True),
-            'Asimetría (Skewness)': df_numeric.apply(skew)
+            'Curtosis (Normal = 0)': df_numeric.kurt(),
+            'Asimetría (Skewness)': df_numeric.skew()
         }).round(3)
 
     def calculate_correlation_matrix(self, df: pd.DataFrame) -> pd.DataFrame:
@@ -53,12 +54,21 @@ class StatisticalAnalyzer:
 
     def check_normality(self, series: pd.Series) -> Tuple[bool, float]:
         """
-        Performs Shapiro-Wilk test.
-        Returns (is_normal, p_value)
+        Performs approximate normality check (Shapiro removed).
+        Returns (is_normal, p_value) - Placeholder
         """
+        # Shapiro-Wilk requires scipy, which is too heavy for Vercel free tier (250MB limit).
+        # We'll return a dummy value or a heuristic.
+        # Heuristic: if skew < 2 and kurt < 2, it's roughly normal-ish.
         try:
-            stat, p = shapiro(series.dropna())
-            return p > 0.05, p
+            s_val = series.dropna()
+            if len(s_val) < 3:
+                return False, 0.0
+            
+            k = s_val.kurt()
+            s = s_val.skew()
+            is_normal = abs(k) < 2.0 and abs(s) < 2.0
+            return is_normal, 1.0 if is_normal else 0.0
         except:
             return False, 0.0
 
@@ -118,7 +128,7 @@ class DataCleaner:
                 
         return df_clean, affected_count
 
-from sklearn.preprocessing import MinMaxScaler, StandardScaler
+# from sklearn.preprocessing import MinMaxScaler, StandardScaler (Removed for Vercel)
 
 class DataScaler:
     """Domain service for Normalization and Standardization."""
@@ -129,20 +139,27 @@ class DataScaler:
             return None
             
         df_scaled = df.copy()
-        scaler = None
         
-        if method == "Min-Max":
-            scaler = MinMaxScaler()
-        elif method == "Z-Score":
-            scaler = StandardScaler()
-        else:
-            return df_scaled # Unknown method
-            
         for col in columns:
             if col in df_scaled.columns and pd.api.types.is_numeric_dtype(df_scaled[col]):
-                # Reshape for sklearn: (n_samples, 1)
-                data = df_scaled[[col]]
-                df_scaled[col] = scaler.fit_transform(data)
+                series = df_scaled[col]
+                
+                if method == "Min-Max":
+                    min_val = series.min()
+                    max_val = series.max()
+                    # Avoid division by zero
+                    if max_val - min_val == 0:
+                        df_scaled[col] = 0
+                    else:
+                        df_scaled[col] = (series - min_val) / (max_val - min_val)
+                        
+                elif method == "Z-Score":
+                    mean_val = series.mean()
+                    std_val = series.std()
+                    if std_val == 0:
+                        df_scaled[col] = 0
+                    else:
+                        df_scaled[col] = (series - mean_val) / std_val
                 
         return df_scaled
 
@@ -184,7 +201,7 @@ class OutlierManager:
         else: # Informar
             return df_out, num_outliers, "Solo detectados (sin cambios)."
 
-from sklearn.cluster import KMeans
+# from sklearn.cluster import KMeans
 
 class Clusterer:
     """Domain service for Unsupervised Learning (Clustering)."""
@@ -196,20 +213,44 @@ class Clusterer:
         
         try:
             df_clustered = df.copy()
-            # Simple imputation for clustering if needed, though we assume data is clean-ish
-            X = df_clustered[columns].dropna()
+            X = df_clustered[columns].dropna().astype(float).values
             
             if len(X) < k:
                 return df, f"Error: No hay suficientes datos para {k} clusters."
                 
-            model = KMeans(n_clusters=k, random_state=42, n_init='auto')
-            clusters = model.fit_predict(X)
+            # Simple manual KMeans using numpy
+            # Initialize centroids randomly
+            np.random.seed(42)
+            idx = np.random.choice(len(X), k, replace=False)
+            centroids = X[idx]
             
-            # Re-align clusters to original index
-            df_clustered.loc[X.index, 'Cluster'] = clusters
+            clusters = np.zeros(len(X))
+            
+            # Simple iterations (max 10 for performance/simplicity)
+            for _ in range(10):
+                # Distance matrix: (n_samples, k)
+                # Compute distance from each point to each centroid
+                dists = np.linalg.norm(X[:, np.newaxis] - centroids, axis=2)
+                
+                # Assign to nearest centroid
+                new_clusters = np.argmin(dists, axis=1)
+                
+                if np.array_equal(clusters, new_clusters):
+                    break
+                    
+                clusters = new_clusters
+                
+                # Update centroids
+                for i in range(k):
+                    points = X[clusters == i]
+                    if len(points) > 0:
+                        centroids[i] = points.mean(axis=0)
+            
+            
+            df_clustered.loc[df_clustered[columns].dropna().index, 'Cluster'] = clusters
             df_clustered['Cluster'] = df_clustered['Cluster'].fillna(-1).astype(int)
             
-            return df_clustered, f"Clustering completado (K={k})."
+            return df_clustered, f"Clustering completado (K={k}) - NativeMode."
         except Exception as e:
             return df, f"Error clustering: {str(e)}"
 

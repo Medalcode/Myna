@@ -7,6 +7,10 @@ from src.core.models import AnalysisSession, OperationLog
 
 class LocalFileSessionRepository(SessionRepository):
     def __init__(self, storage_dir: str = "storage/sessions"):
+        if os.environ.get("VERCEL"):
+            # Vercel filesystem is read-only except for /tmp
+            storage_dir = "/tmp/storage/sessions"
+            
         self.storage_dir = storage_dir
         os.makedirs(self.storage_dir, exist_ok=True)
 
@@ -38,19 +42,23 @@ class LocalFileSessionRepository(SessionRepository):
 
 class LocalFileDataRepository(DataRepository):
     def __init__(self, storage_dir: str = "storage/data"):
+        if os.environ.get("VERCEL"):
+            # Vercel filesystem is read-only except for /tmp
+            storage_dir = "/tmp/storage/data"
+            
         self.storage_dir = storage_dir
         os.makedirs(self.storage_dir, exist_ok=True)
 
     def _get_path(self, session_id: str) -> str:
-        return os.path.join(self.storage_dir, f"{session_id}.parquet")
+        return os.path.join(self.storage_dir, f"{session_id}.pkl")
 
     def save_dataframe(self, session_id: str, df: pd.DataFrame) -> None:
         path = self._get_path(session_id)
-        # Use parquet for performance
-        df.to_parquet(path)
+        # Use pickle to avoid pyarrow dependency (size limit on Vercel)
+        df.to_pickle(path)
 
     def load_dataframe(self, session_id: str) -> Optional[pd.DataFrame]:
         path = self._get_path(session_id)
         if not os.path.exists(path):
             return None
-        return pd.read_parquet(path)
+        return pd.read_pickle(path)

@@ -10,7 +10,7 @@ class SessionRepository(ABC):
         pass
 
     @abstractmethod
-    def save_session(self, session: AnalysisSession) -> None:
+    def save_session(self, session: AnalysisSession, session_id: str) -> None:
         """Saves session metadata."""
         pass
 

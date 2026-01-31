@@ -9,7 +9,7 @@ Repo: https://github.com/Medalcode/Hermes
 
 Started: 2026-01-20
 
-LastUpdate: 2026-01-30
+LastUpdate: 2026-01-31
 
 🧱 Features
 
@@ -139,11 +139,21 @@ Description: Aumentar cobertura de tests para los nuevos repositorios y la capa 
 
 Tags: testing, qa
 
+Completed: 2026-01-26
+
+### F-024 — Serverless Optimization (NativeMode)
+
+Description: Reemplazo de `scikit-learn`/`scipy` por implementaciones nativas (NumPy) y cambio de almacenamiento a Pickle para cumplir límites de tamaño de Vercel (<250MB).
+
+Tags: devops, vercel, optimization
+
+Completed: 2026-01-30
+
 ### F-017 — Dockerización
 
-Description: Crear `Dockerfile` y `docker-compose.yml` para despliegue contenerizado.
+Description: Crear `Dockerfile` y `docker-compose.yml` para despliegue contenerizado. (On Hold: Prioridad en Serverless/Vercel)
 
-Tags: devops, docker
+Tags: devops, docker, on-hold
 
 ### F-018 — Validación de Tipos
 

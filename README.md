@@ -1,94 +1,168 @@
-# ✨ Myna: Intelligent Data Mining Tool
+🐦 Myna — Intelligent Data Mining Platform
 
-> **Refactored V5.0**: Now powered by **FastAPI**, **Hexagonal Architecture**, and **Vanilla JS**.
+Myna es una plataforma de data mining diseñada para exploración, limpieza y análisis estadístico de datasets tabulares, con foco en arquitectura escalable, extensibilidad y separación estricta de responsabilidades.
 
-Myna is a powerful, modular data mining application designed to perform descriptive statistics, data cleaning, outlier detection, clustering, and interactive visualization on CSV and Excel datasets.
+No es un script experimental: es un sistema pensado para crecer en reglas de negocio, algoritmos y usuarios, manteniendo testabilidad y claridad conceptual.
 
-![Myna UI](file:///home/medalcode/.gemini/antigravity/brain/7cba53f4-27f8-4935-98f6-51a16f5e0069/hermes_new_ui_1768885882639.png)
+🎯 Problema que resuelve
 
-## 🚀 Key Features
+En muchos entornos analíticos:
 
-- **Modular Architecture**: Built on Hexagonal Architecture (Ports & Adapters) for maximum maintainability and testability.
-- **Modern Web UI**: Custom Dark Theme interface built with HTML5, CSS3, and JavaScript (No more Gradio).
-- **FastAPI Backend**: High-performance REST API handling all domain logic.
-- **Interactive Visualization**: Charts powered by **Plotly.js** (Zoom, Pan, Hover).
-- **Unsupervised Learning**: K-Means Clustering integration.
-- **Data Ops**:
-  - Missing Value Imputation (Mean, Median, Zero, Drop).
-  - Scaling (MinMax, Z-Score).
-  - Outlier Detection & Treatment (IQR Method).
+Los flujos de análisis viven en notebooks frágiles o scripts monolíticos
 
-## 🛠️ Installation
+La lógica de negocio se mezcla con UI, I/O y visualización
 
-1.  **Clone the repository**:
+Escalar a múltiples datasets, sesiones o algoritmos implica reescribir todo
 
-    ```bash
-    git clone https://github.com/Medalcode/Hermes.git
-    cd Hermes
-    ```
+Myna ataca ese problema desde la arquitectura, no desde el tooling.
 
-2.  **Create a Virtual Environment**:
+🧠 Enfoque de diseño
 
-    ```bash
-    python3 -m venv venv
-    source venv/bin/activate
-    ```
+Myna está construido bajo Arquitectura Hexagonal (Ports & Adapters), lo que permite:
 
-3.  **Install Dependencies**:
-    ```bash
-    pip install -r requirements.txt
-    ```
+Aislar el dominio de cualquier framework
 
-## ▶️ Usage
+Cambiar UI, persistencia o visualización sin tocar la lógica central
 
-Run the application using the entry point:
+Testear el core sin dependencias externas
 
-```bash
-# Make sure venv is active
-python src/main.py
-```
+Evolucionar de herramienta local a servicio multiusuario
 
-Open your browser at **`http://localhost:8000`**.
+✨ Capacidades principales
+📊 Análisis y preparación de datos
 
-## 🏗️ Project Structure
+Estadística descriptiva
 
-```
+Limpieza de datos
+
+Imputación de valores faltantes:
+
+Media
+
+Mediana
+
+Cero
+
+Eliminación
+
+Escalado:
+
+MinMax
+
+Z-Score
+
+Detección y tratamiento de outliers (IQR)
+
+🤖 Aprendizaje no supervisado
+
+K-Means Clustering integrado como servicio de dominio
+
+📈 Visualización interactiva
+
+Gráficos dinámicos con Plotly.js
+
+Zoom, pan y hover
+
+Totalmente desacoplado del core
+
+🏗️ Arquitectura
 src/
-├── core/                 # Domain Layer (Business Logic)
-│   ├── domain_services.py  # Stats, Cleaning, Clustering Logic
-│   ├── models.py           # Data Classes (Session)
-│   └── ports.py            # [NEW] Interfaces for Repositories (Persistence)
-├── adapters/             # Interface Layer
-│   ├── api/                # FastAPI Router (Backend)
-│   │   ├── router.py       # API Endpoints
-│   │   └── dependencies.py # [NEW] Dependency Injection
-│   ├── repositories/       # [NEW] Data Persistence (Sessions/Storage)
-│   ├── fs/                 # File System Adapter
-│   └── visualization/      # Plotting Adapter (Plotly)
-└── main.py               # Application Entry Point
+├── core/ # Dominio puro (sin frameworks)
+│ ├── domain_services.py # Estadística, limpieza, clustering
+│ ├── models.py # Modelos de dominio (Session, Dataset)
+│ └── ports.py # Interfaces (Ports)
+│
+├── adapters/ # Implementaciones externas
+│ ├── api/ # FastAPI (entrada HTTP)
+│ │ ├── router.py
+│ │ └── dependencies.py # Inyección de dependencias
+│ ├── repositories/ # Persistencia (repositorios)
+│ ├── fs/ # Acceso a archivos
+│ └── visualization/ # Plotting (Plotly)
+│
+└── main.py # Bootstrap de la aplicación
 
-static/                   # Frontend Assets (CSS, JS)
-templates/                # HTML Templates
-tests/                    # Unit Tests
-```
+## ⚖️ Decisiones de Arquitectura (ADR)
 
-## 🧪 Running Tests
+Este proyecto toma decisiones técnicas conscientes basadas en restricciones de despliegue real (Capa Gratuita de Vercel / Serverless AWS Lambda):
 
-Ensure the core logic is working correctly:
+1.  **Optimización "Zero-Dependencies"**:
+    - **Problema**: Límite estricto de 250MB para Serverless Functions. Librerías como `scikit-learn` y `scipy` exceden este límite.
+    - **Solución**: Implementación **nativa (NumPy/Pandas Pure)** de algoritmos como K-Means, Z-Score y Fisher Kurtosis. Se eliminaron dependencias pesadas para mantener el artifact ligero (<100MB).
 
-```bash
+2.  **Persistencia Agnostica**:
+    - La arquitectura define interfaces (`ports.py`) que permiten cambiar el almacenamiento de `LocalStorage` (actual, para demos) a `S3/BlobStorage` (producción) cambiando una sola línea de inyección de dependencias.
+
+3.  **Visualización Desacoplada**:
+    - Generación de gráficos JSON (Plotly) en el backend, permitiendo que cualquier frontend (React, Vue, Vanilla) renderice la interacción sin lógica de negocio en el cliente.
+
+📌 Regla clave:
+
+El dominio no conoce a FastAPI, Plotly ni al filesystem.
+Los adapters dependen del core, nunca al revés.
+
+🧪 Testing
+
+Los tests están enfocados en comportamiento de dominio, no en frameworks.
+
 PYTHONPATH=. pytest tests/
-```
 
-## 🔄 History
+Esto permite refactors estructurales sin romper la lógica central.
 
-- **V5.1 (Scalability Refactor)**: Stateless Architecture, Repository Pattern, Multi-session support.
-- **V5.0**: Full migration to FastAPI + Custom UI. Hexagonal Architecture. Plotly.
-- **V4.0**: Refactor to Modular Structure (Gradio).
-- **Legacy**: Monolithic script `final_eval3mineria.py`.
+▶️ Ejecución
 
-> 📘 Para ver el detalle completo de cambios y tareas pendientes, consulta la [Bitácora de Desarrollo](BITACORA.md).
+# Crear entorno virtual
 
----
+python3 -m venv venv
+source venv/bin/activate
+
+# Instalar dependencias
+
+pip install -r requirements.txt
+
+# Ejecutar
+
+python src/main.py
+
+Abrir en el navegador:
+👉 http://localhost:8000
+
+🔄 Evolución del proyecto
+
+V5.1 — Arquitectura Stateless, Repository Pattern, soporte multi-sesión
+
+V5.0 — Migración completa a FastAPI + UI custom, Hexagonal Architecture
+
+V4.0 — Modularización inicial (Gradio)
+
+Legacy — Script monolítico final_eval3mineria.py
+
+El historial completo de decisiones técnicas y tareas pendientes vive en la Bitácora de Desarrollo (Bitacora.md).
+
+🧭 Visión a futuro
+
+Myna está preparada para evolucionar hacia:
+
+Persistencia real de sesiones
+
+Ejecución concurrente
+
+Nuevos algoritmos plug-and-play
+
+UI desacoplada como cliente independiente
+
+Uso como servicio analítico interno o producto
+
+🧩 Por qué este proyecto importa
+
+Este repositorio no busca mostrar “features”, sino criterio técnico:
+
+Diseño orientado al cambio
+
+Separación estricta de responsabilidades
+
+Dominio como ciudadano de primera clase
+
+## Código escrito para otros desarrolladores
 
 _Created by Medalcode & Team_
