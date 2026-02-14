@@ -166,3 +166,25 @@ Dominio como ciudadano de primera clase
 ## Código escrito para otros desarrolladores
 
 _Created by Medalcode & Team_
+
+## Agent & Skills (extensibilidad)
+
+Se ha añadido una capa de orquestación basada en el concepto de `Agent` y `Skill` para facilitar pipelines reproducibles y extensibles.
+
+- `Agent`: orquestador de alto nivel que coordina la ejecución de skills sobre una `AnalysisSession`.
+- `Skill`: acción atómica y registrable que opera sobre la sesión (ej.: `clean_nulls`, `scale_columns`, `kmeans_cluster`).
+
+Implementación inicial en el repo:
+
+- `docs/agent.md` — explicación conceptual y ciclo de vida.
+- `docs/skills.md` — catálogo, convenciones y plantilla de skills.
+- `src/core/agents/base.py` — `AgentManager`, `SkillResult` y decorador `@register_skill`.
+- `src/core/agents/skills/clean_nulls.py` — ejemplo de skill que usa `DataCleaner`.
+
+Motivación: permite agregar nuevas capacidades como plugins (skills) sin cambiar el router ni el core, mejorar trazabilidad y facilitar pruebas.
+
+Notas operativas:
+
+- Para inyectar el manager en rutas, usar `get_agent_manager()` desde `src/adapters/api/dependencies.py`.
+- Recomendado añadir `skill_history` y `schema_version` en `AnalysisSession` para auditoría y rollback.
+

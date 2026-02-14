@@ -2,10 +2,13 @@ from fastapi import Request, Cookie, Response, Depends
 import uuid
 from src.core.models import AnalysisSession
 from src.adapters.repositories.local_storage import LocalFileSessionRepository, LocalFileDataRepository
+from src.core.agents.base import AgentManager
 
 # Singleton instances (in a real app, use a proper DI container)
 session_repo = LocalFileSessionRepository()
 data_repo = LocalFileDataRepository()
+# Agent manager singleton (registro inicial de skills se realiza por decorador)
+agent_manager = AgentManager()
 
 async def get_session_id(request: Request, response: Response):
     session_id = request.cookies.get("session_id")
@@ -31,3 +34,7 @@ def save_analysis_session(session_id: str, session: AnalysisSession):
     session_repo.save_session(session, session_id)
     if session.current_df is not None:
         data_repo.save_dataframe(session_id, session.current_df)
+
+
+def get_agent_manager():
+    return agent_manager
